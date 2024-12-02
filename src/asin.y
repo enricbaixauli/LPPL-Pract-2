@@ -189,29 +189,64 @@ expre
 ;
 
 
+
 expreLogic 
     : expreIgual 
-    | expreLogic opLogic expreIgual
+    | expreLogic opLogic expreIgual {
+        if ($1.t != T_LOGICO || $3.t != T_LOGICO) {
+            yyerror("Error: operación lógica entre tipos no booleanos");
+        }
+        $$.t = T_LOGICO;  
+    }
 ;
 
 expreIgual 
     : expreRel 
-    | expreIgual opIgual expreRel
+    | expreIgual opIgual expreRel{
+        if (!($1.t = T_ERROR || $3.t = T_ERROR)){
+            if ($1.t!=$3.t){yyerror("Error: No son del mismo tipo");}
+            else if ($3.t != T_ENTERO || $3.t != T_LOGICO) {
+            yyerror("Error: operación de igualdad entre tipos no enteros ni lógicos");
+        }
+        $$.t = T_LOGICO;
+        } 
+    }
 ;
 
 expreRel 
     : expreAd 
-    | expreRel opRel expreAd
+    | expreRel opRel expreAd{
+        if (!($1.t = T_ERROR || $3.t = T_ERROR)){
+            if ($1.t != T_ENTERO || $3.t != T_ENTERO) {
+            yyerror("Error: operación de relación entre tipos no enteros");
+        }
+        $$.t = T_LOGICO;
+        } 
+    }
 ;
 
 expreAd 
     : expreMul 
-    | expreAd opAd expreMul
+    | expreAd opAd expreMul{
+        if (!($1.t = T_ERROR || $3.t = T_ERROR)){
+            if ($1.t != T_ENTERO || $3.t != T_ENTERO) {
+            yyerror("Error: operación aritmética entre tipos no enteros");
+        }
+        $$.t = T_ENTERO;
+        } 
+    }
 ;
 
 expreMul 
     : expreUna 
-    | expreMul opMul expreUna
+    | expreMul opMul expreUna{
+        if (!($1.t = T_ERROR || $3.t = T_ERROR)){
+            if ($1.t != T_ENTERO || $3.t != T_ENTERO) {
+            yyerror("Error: operación aritmética entre tipos no enteros");
+        }
+        $$.t = T_ENTERO;
+        } 
+    }
 ;
 
 expreUna 
