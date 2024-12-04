@@ -71,7 +71,12 @@ identificador      {letra}({letra}|{digito}|"_")*
 "}"                 {retornar(FBLOCK_);}
 ";"                 {retornar(PCOMA_);}
 ","                 {retornar(COMA_);}
-{real}          { retornar (CTE_); }
+{real}              { 
+                      double real = atof(yytext); 
+                      int entero = (int) real;     
+                      yylval.ival = entero;       
+                      retornar (CTE_); 
+                    }
 {entero}        { retornar (CTE_) ; }
 {identificador}    { retornar(ID_); }
 .				{ yyerror("Caracter desconocido") ;}

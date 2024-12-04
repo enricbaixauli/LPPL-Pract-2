@@ -6,6 +6,7 @@
 #include "header.h"
 
 int mainDeclarada = 0; // Variable global para controlar la declaración de main
+int TALLA_TIPO_SIMPLE = 1
 %}
 
 %token PARA_ PARC_ MAS_ MENOS_ POR_ DIV_ CTE_ 
@@ -29,49 +30,45 @@ decla
 
 declaVar
     : tipoSimp ID_ PCOMA_ {
+        int talla = $1.t;
+        if ($1.t == INT_) {
+            talla = TALLA_TIPO_SIMPLE;  // La talla de los enteros es 1 = TALLA_TIPO_SIMPLE
+        } else if ($1.t == BOOL_) {
+            talla = TALLA_TIPO_SIMPLE;  // La talla de los lógicos también es 1 = TALLA_TIPO_SIMPLE
+        }
+        
         SIMB sim = obtTdS($2);
-        if (sim.tipo != T_ERROR) {
+        if (sim.t != T_ERROR) {
             yyerror("Identificador repetido");
         } else {
             if (!insTdS($2, VARIABLE, $1, niv, dvar, -1)) {
                 yyerror("Error al insertar la variable en la tabla de símbolos");
             } else {
-                dvar += TALLA_TIPO_SIMPLE; // Ajustar desplazamiento
+                dvar += talla;  // Ajustar desplazamiento con la talla correcta
             }
         }
     }
     | tipoSimp ID_ ASIG_ const PCOMA_ {
+        int talla = $1.t;
+        if ($1.t == INT_) {
+            talla = 1;
+        } else if ($1.t == BOOL_) {
+            talla = 1;
+        }
+
         SIMB sim = obtTdS($2);
-        if (sim.tipo != T_ERROR) {
+        if (sim.t != T_ERROR) {
             yyerror("Identificador repetido");
         } else {
             if (!insTdS($2, VARIABLE, $1, niv, dvar, -1)) {
                 yyerror("Error al insertar la variable en la tabla de símbolos");
             } else {
-                dvar += TALLA_TIPO_SIMPLE; // Ajustar desplazamiento
-            }
-        }
-    }
-    | tipoSimp ID_ ACORCH_ CTE_ CCORCH_ PCOMA_ {
-        int numelem = $4;
-        if (numelem <= 0) {
-            yyerror("Talla inapropiada del array");
-            numelem = 0;
-        }
-
-        SIMB sim = obtTdS($2);
-        if (sim.tipo != T_ERROR) {
-            yyerror("Identificador repetido");
-        } else {
-            int refe = insTdA($1, numelem);  // Insertar array en la TdA
-            if (!insTdS($2, VARIABLE, T_ARRAY, niv, dvar, refe)) {
-                yyerror("Error al insertar el array en la tabla de símbolos");
-            } else {
-                dvar += numelem * TALLA_TIPO_SIMPLE; // Ajustar desplazamiento
+                dvar += talla;
             }
         }
     }
 ;
+
 
 
 const 
@@ -86,19 +83,42 @@ tipoSimp
 ;
 
 declaFunc 
-    : tipoSimp ID_ PARA_ paramForm PARC_ bloque {
+    : tipoSimp ID_ PARA_ paramForm PARC_ bloque
+    {
+        // Comprobar si la función es 'main'
         if (strcmp($2, "main") == 0) {
             if (mainDeclarada) {
                 yyerror("La función 'main' ya ha sido declarada");
             } else {
-                mainDeclarada = 1; // Marca que la función main ha sido declarada
+                mainDeclarada = 1;  // Marcar que la función 'main' ha sido declarada
             }
         }
-        if (!insTdS($2, FUNCION, $1, niv, dvar)) {
-            yyerror("Función repetida");
+
+        // Comprobamos si la función ya está declarada en la TdS
+        SIMB sim = obtTdS($2);
+        if (sim.tipo != T_ERROR) {
+            yyerror("La función ya está declarada");
+        } else {
+            // Insertamos la función en la TdS antes de procesar su cuerpo
+            int refDom = insTdD(-1, $1);  // Crear un dominio vacío para los parámetros
+            if (!insTdS($2, FUNCION, $1, niv, dvar, refDom)) {
+                yyerror("Función repetida");
+            } else {
+                // Insertamos los parámetros en la TdS (si los hay)
+                int refParam = refDom;
+                for (int i = 0; i < numParams; i++) {
+                    refParam = insTdS(paramList[i], VARIABLE, tipoParam[i], niv + 1, dvar, refParam);
+                }
+            }
         }
+
+        // Procesar el cuerpo de la función ahora que ya está en la TdS
+        cargaContexto(niv);  // Cargar el contexto local para el bloque de la función
+        $$ = $6;  // Procesar el bloque de la función
+        descargaContexto(niv);  // Descargar el contexto local
     }
 ;
+
 
 paramForm 
     :  
@@ -144,7 +164,7 @@ instExpre
 instEntSal 
     : READ_ PARA_ ID_ PARC_ PCOMA_ {
         SIMB sim = obtTdS($3);
-        if (sim.tipo == T_ERROR) {
+        if (sim.t == T_ERROR) {
             yyerror("Variable no declarada");
         }
     }
@@ -168,21 +188,21 @@ expre
     : expreLogic
     | ID_ ASIG_ expre {
         SIMB sim = obtTdS($1);
-        if (sim.tipo == T_ERROR) {
+        if (sim.t == T_ERROR) {
             yyerror("Variable no declarada");
-        } else if (sim.tipo != $3.tipo) {
+        } else if (sim.t != $3.t) {
             yyerror("Error de tipos en la asignación");
         }
     }
     | ID_ ACORCH_ expre CCORCH_ ASIG_ expre {
         SIMB sim = obtTdS($1);
-        if (sim.tipo == T_ERROR) {
+        if (sim.t == T_ERROR) {
             yyerror("Array no declarado");
-        } else if (sim.tipo != T_ARRAY) {
+        } else if (sim.t != T_ARRAY) {
             yyerror("Asignación inapropiada a un elemento que no es un array");
-        } else if ($3.tipo != T_ENTERO) {
+        } else if ($3.t != T_ENTERO) {
             yyerror("El índice del array debe ser de tipo entero");
-        } else if ($6.tipo != T_ENTERO) {
+        } else if ($6.t != T_ENTERO) {
             yyerror("El valor asignado al array debe ser de tipo entero");
         }
     }
@@ -207,7 +227,7 @@ expreIgual
             if ($1.t!=$3.t){yyerror("Error: No son del mismo tipo");}
             else if ($3.t != T_ENTERO || $3.t != T_LOGICO) {
             yyerror("Error: operación de igualdad entre tipos no enteros ni lógicos");
-        }
+            }
         $$.t = T_LOGICO;
         } 
     }
@@ -219,7 +239,7 @@ expreRel
         if (!($1.t = T_ERROR || $3.t = T_ERROR)){
             if ($1.t != T_ENTERO || $3.t != T_ENTERO) {
             yyerror("Error: operación de relación entre tipos no enteros");
-        }
+            }
         $$.t = T_LOGICO;
         } 
     }
@@ -259,23 +279,23 @@ expreSufi
     | PARA_ expre PARC_
     | ID_ {
         SIMB sim = obtTdS($1);
-        if (sim.tipo == T_ERROR) {
+        if (sim.t == T_ERROR) {
             yyerror("Variable no declarada");
         }
     }
     | ID_ ACORCH_ expre CCORCH_ {
         SIMB sim = obtTdS($1);
-        if (sim.tipo == T_ERROR) {
+        if (sim.t == T_ERROR) {
             yyerror("Array no declarado");
-        } else if (sim.tipo != T_ARRAY) {
+        } else if (sim.t != T_ARRAY) {
             yyerror("Uso inapropiado de una variable no array como array");
         }
     }
     | ID_ PARA_ paramAct PARC_ {
         SIMB sim = obtTdS($1);
-        if (sim.tipo == T_ERROR) {
+        if (sim.t == T_ERROR) {
             yyerror("Llamada a función no declarada");
-        } else if (sim.tipo != FUNCION) {
+        } else if (sim.t != FUNCION) {
             yyerror("El identificador no es una función");
         }
     }
