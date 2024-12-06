@@ -6,11 +6,19 @@
 #include "header.h"
 
 int mainDeclarada = 0; // Variable global para controlar la declaración de main
-int TALLA_TIPO_SIMPLE = 1
+int TALLA_TIPO_SIMPLE = 1;
 %}
+
+%union{
+	int cent;
+	char *ident;
+}
 
 %token PARA_ PARC_ MAS_ MENOS_ POR_ DIV_ CTE_ 
 %token ASIGSUMA_ ASIGRESTA_ ASIGPRODUCTO_ ASIGDIVISION_ LOGICOAND_ LOGICOOR_ IGUALDAD_ DISTINTO_ MAYORIGU_ MENORIGU_ INCREMENTO_ DECREMENTO_ ASIG_ OPRESTO_ MAYOR_ MENOR_ OPNEG_ IDENTIFICADOR_ ID_ TRUE_ FALSE_ BOOL_ RETURN_ READ_ PRINT_ IF_ FOR_ ACORCH_ CCORCH_ IBLOCK_ FBLOCK_ PCOMA_ COMA_ INT_ ELSE_
+
+%token <cent>  CTE_
+%token <ident> ID_
 
 %%
 
@@ -72,9 +80,9 @@ declaVar
 
 
 const 
-    : CTE_ 
-    | TRUE_ 
-    | FALSE_
+    : CTE_ {$$.t = T_ENTERO;}
+    | TRUE_ {$$.t = T_LOGICO;}
+    | FALSE_ {$$.t = T_LOGICO;}
 ;
 
 tipoSimp 
@@ -223,7 +231,7 @@ expreLogic
 expreIgual 
     : expreRel 
     | expreIgual opIgual expreRel{
-        if (!($1.t = T_ERROR || $3.t = T_ERROR)){
+        if (!($1.t == T_ERROR || $3.t == T_ERROR)){
             if ($1.t!=$3.t){yyerror("Error: No son del mismo tipo");}
             else if ($3.t != T_ENTERO || $3.t != T_LOGICO) {
             yyerror("Error: operación de igualdad entre tipos no enteros ni lógicos");
@@ -236,7 +244,7 @@ expreIgual
 expreRel 
     : expreAd 
     | expreRel opRel expreAd{
-        if (!($1.t = T_ERROR || $3.t = T_ERROR)){
+        if (!($1.t == T_ERROR || $3.t == T_ERROR)){
             if ($1.t != T_ENTERO || $3.t != T_ENTERO) {
             yyerror("Error: operación de relación entre tipos no enteros");
             }
@@ -260,7 +268,7 @@ expreAd
 expreMul 
     : expreUna 
     | expreMul opMul expreUna{
-        if (!($1.t = T_ERROR || $3.t = T_ERROR)){
+        if (!($1.t == T_ERROR || $3.t == T_ERROR)){
             if ($1.t != T_ENTERO || $3.t != T_ENTERO) {
             yyerror("Error: operación aritmética entre tipos no enteros");
         }
@@ -313,12 +321,12 @@ listParamAct
 ;
 
 opLogic 
-    : LOGICOAND_  
-    | LOGICOOR_
+    : LOGICOAND_  {$$ = OP_AND;}
+    | LOGICOOR_   {$$ = OP_OR;}
 ;
 
 opIgual 
-    : IGUALDAD_ 
+    : IGUALDAD_  {$$ = OP_IGUAL;}
     | DISTINTO_
 ;
 
