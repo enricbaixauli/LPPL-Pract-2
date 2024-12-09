@@ -86,8 +86,8 @@ const
 ;
 
 tipoSimp 
-    : INT_ 
-    | BOOL_
+    : INT_ {$$.t = T_ENTERO;}
+    | BOOL_ {$$.t = T_LOGICO;}
 ;
 
 declaFunc 
@@ -198,6 +198,9 @@ expre
         SIMB sim = obtTdS($1);
         if (sim.t == T_ERROR) {
             yyerror("Variable no declarada");
+	} else if ((sim.t == T_ENTERO && $3.t == T_LOGICO) || 
+                   (sim.t == T_LOGICO && $3.t == T_ENTERO)) {
+            yyerror("Error: No se permite la conversión entre 'int' i 'bool'");
         } else if (sim.t != $3.t) {
             yyerror("Error de tipos en la asignación");
         }
@@ -297,6 +300,11 @@ expreSufi
             yyerror("Array no declarado");
         } else if (sim.t != T_ARRAY) {
             yyerror("Uso inapropiado de una variable no array como array");
+        }else if ($3.t != T_ENTERO) {
+            yyerror("Error: El índice del vector ha de ser de tipo entero");
+        } else {
+            DIM infoArray = obtTdA(sim.ref);  
+            $$.t = infoArray.telem;  
         }
     }
     | ID_ PARA_ paramAct PARC_ {
