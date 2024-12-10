@@ -8,7 +8,7 @@ INCDIR = include
 LIBDIR = lib
 # Opciones de compilacion
 COPT = -Wall
-CLIB = -lfl -ltds
+CLIB =  -lfl -ltds
 OBJS = ./alex.o  ./asin.o ./principal.o 
 #
 cmc:	$(OBJS)  $(LIBDIR)/libtds.a

@@ -1,14 +1,15 @@
 %{
 
 #include <stdio.h>
-
+#include <string.h>
 #include "header.h"
+#include "asin.h"
+#include "libtds.h" 
 
 
 
 int mainDeclarada = 0;
 
-int TALLA_TIPO_SIMPLE = 1;
 
 %}
 
@@ -50,6 +51,7 @@ int TALLA_TIPO_SIMPLE = 1;
 
 %type <cent> opLogic opIgual opRel opAd opMul opUna
 
+%type <cent> paramAct listParamAct
 
 
 %%
@@ -238,9 +240,9 @@ paramForm
 
 listParamForm
 
-  : tipoSimp ID_ { insTdS($2, PARAMETRO, $1, niv, dvar); }
+  : tipoSimp ID_ { insTdS($2, PARAMETRO, $1, niv, dvar, -1); }
 
-  | tipoSimp ID_ COMA_ listParamForm { insTdS($2, PARAMETRO, $1, niv, dvar); }
+  | tipoSimp ID_ COMA_ listParamForm { insTdS($2, PARAMETRO, $1, niv, dvar, -1); }
 
   ;
 
@@ -656,7 +658,7 @@ opIgual
 
   : IGUALDAD_ { $$ = OP_IGUAL; }
 
-  | DISTINTO_ { $$ = OP_DIST; }
+  | DISTINTO_ { $$ = DISTINTO_; }
 
   ;
 
@@ -688,7 +690,7 @@ opAd
 
 opMul
 
-  : POR_ { $$ = OP_MUL; }
+  : POR_ { $$ = POR_; }
 
   | DIV_ { $$ = OP_DIV; }
 
@@ -698,11 +700,11 @@ opMul
 
 opUna
 
-  : MAS_   { $$ = OP_UPLUS; }
+  : MAS_   { $$ = MAS_; }
 
-  | MENOS_ { $$ = OP_UMENOS; }
+  | MENOS_ { $$ = MENOS_; }
 
-  | OPNEG_ { $$ = OP_NEG; }
+  | OPNEG_ { $$ = OPNEG_; }
 
   ;
 

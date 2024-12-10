@@ -2,6 +2,8 @@
 /**  Ejemplo de BISON-I: S E M - 2          <jbenedi@dsic.upv.es>   V.24    **/
 /*****************************************************************************/
 %{
+#include <stdio.h>
+#include <string.h>
 #include "asin.h"
 #include "header.h"
 
@@ -74,10 +76,17 @@ identificador      {letra}({letra}|{digito}|"_")*
 {real}              { 
                       double real = atof(yytext); 
                       int entero = (int) real;     
-                      yylval.ival = entero;       
+                      yylval.cent = entero;       
                       retornar (CTE_); 
                     }
-{entero}        { retornar (CTE_) ; }
-{identificador}    { retornar(ID_); }
+{entero}            { 
+                      yylval.cent = atoi(yytext);
+                      retornar (CTE_);
+                    }
+
+{identificador}     {
+                      yylval.ident = strdup(yytext);
+                      retornar(ID_);
+                    }
 .				{ yyerror("Caracter desconocido") ;}
 %%
