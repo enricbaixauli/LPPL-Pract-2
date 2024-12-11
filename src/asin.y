@@ -62,11 +62,11 @@ programa
 
 	: { dvar=0; niv = 0; cargaContexto(niv); }
 
-	listaDeclaraciones 
+	listDecla
 
 	{ if(verTdS) mostrarTdS(); }
-
     ;
+
 
 
 
