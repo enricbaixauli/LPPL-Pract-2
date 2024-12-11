@@ -58,11 +58,15 @@ int mainDeclarada = 0;
 
 
 
-programa
+programa 
 
-  : listDecla
+	: { dvar=0; niv = 0; cargaContexto(niv); }
 
-  ;
+	listaDeclaraciones 
+
+	{ if(verTdS) mostrarTdS(); }
+
+    ;
 
 
 
