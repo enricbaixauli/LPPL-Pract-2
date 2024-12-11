@@ -301,14 +301,19 @@ instEntSal
       SIMB sim = obtTdS($3);
 
       if (sim.t == T_ERROR) {
-
         yyerror("Variable no declarada");
-
+      } else if (sim.t != T_ENTERO) {
+            yyerror("Error: La variable a 'read' ha de ser de tipus enter");
       }
+
 
     }
 
-  | PRINT_ PARA_ expre PARC_ PCOMA_
+  | PRINT_ PARA_ expre PARC_ PCOMA_ {
+        if ($3.t != T_ENTERO) {
+            yyerror("Error: L'expressió a 'write' ha de ser de tipus enter");
+        }
+    }
 
   ;
 
