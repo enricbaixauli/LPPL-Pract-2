@@ -60,10 +60,14 @@ declaVar
       SIMB sim = obtTdS($2);
       if (sim.t != T_ERROR) yyerror("Identificador repetido");
       else {
-        if (!insTdS($2, VARIABLE, $1, niv, dvar, -1))
-          yyerror("Error al insertar la variable en la tabla de símbolos");
-        else dvar += TALLA_TIPO_SIMPLE;
-      }
+         if ($1 != $4) {  
+            yyerror("Error: Tipo incompatible entre la variable y la constante asignada");
+        } else {
+            if (!insTdS($2, VARIABLE, $1, niv, dvar, -1)) {
+                yyerror("Error al insertar la variable en la Tabla de Símbolos");
+            } else {
+                dvar += TALLA_TIPO_SIMPLE;  
+            }
     }
   | tipoSimp ID_ ACORCH_ CTE_ CCORCH_ PCOMA_ {
       int numelem = $4;
