@@ -87,64 +87,50 @@ decla
 
 
 declaVar
-
-  : tipoSimp ID_ PCOMA_
-
-    {
-
-      int talla = ($1 == T_ENTERO || $1 == T_LOGICO) ? TALLA_TIPO_SIMPLE : 1;
-
-      SIMB sim = obtTdS($2);
-
-      if (sim.t != T_ERROR) {
-
-        yyerror("Identificador repetido");
-
-      } else {
-
-        if (!insTdS($2, VARIABLE, $1, niv, dvar, -1)) {
-
-          yyerror("Error al insertar la variable");
-
+    : tipoSimp ID_ PCOMA_ {
+        SIMB sim = obtTdS($2);
+        if (sim.tipo != T_ERROR) {
+            yyerror("Identificador repetido");
         } else {
-
-          dvar += talla;
-
+            if (!insTdS($2, VARIABLE, $1, niv, dvar, -1)) {
+                yyerror("Error al insertar la variable en la tabla de símbolos");
+            } else {
+                dvar += TALLA_TIPO_SIMPLE; // Ajustar desplazamiento
+            }
+        }
+    }
+    | tipoSimp ID_ ASIG_ const PCOMA_ {
+        SIMB sim = obtTdS($2);
+        if (sim.tipo != T_ERROR) {
+            yyerror("Identificador repetido");
+        } else {
+            if (!insTdS($2, VARIABLE, $1, niv, dvar, -1)) {
+                yyerror("Error al insertar la variable en la tabla de símbolos");
+            } else {
+                dvar += TALLA_TIPO_SIMPLE; // Ajustar desplazamiento
+            }
+        }
+    }
+    | tipoSimp ID_ ACORCH_ CTE_ CCORCH_ PCOMA_ {
+        int numelem = $4;
+        if (numelem <= 0) {
+            yyerror("Talla inapropiada del array");
+            numelem = 0;
         }
 
-      }
-
-    }
-
-  | tipoSimp ID_ ASIG_ const PCOMA_
-
-    {
-
-      int talla = ($1 == T_ENTERO || $1 == T_LOGICO) ? 1 : 1;
-
-      SIMB sim = obtTdS($2);
-
-      if (sim.t != T_ERROR) {
-
-        yyerror("Identificador repetido");
-
-      } else {
-
-        if (!insTdS($2, VARIABLE, $1, niv, dvar, -1)) {
-
-          yyerror("Error al insertar la variable");
-
+        SIMB sim = obtTdS($2);
+        if (sim.tipo != T_ERROR) {
+            yyerror("Identificador repetido");
         } else {
-
-          dvar += talla;
-
+            int refe = insTdA($1, numelem);  // Insertar array en la TdA
+            if (!insTdS($2, VARIABLE, T_ARRAY, niv, dvar, refe)) {
+                yyerror("Error al insertar el array en la tabla de símbolos");
+            } else {
+                dvar += numelem * TALLA_TIPO_SIMPLE; // Ajustar desplazamiento
+            }
         }
-
-      }
-
     }
-
-  ;
+;
 
 
 
