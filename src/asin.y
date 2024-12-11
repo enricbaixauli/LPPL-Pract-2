@@ -95,6 +95,8 @@ tipoSimp
 
 declaFunc
   : tipoSimp ID_ PARA_ paramForm PARC_ bloque {
+      niv++;
+      cargaContexto(niv);
       if (strcmp($2, "main") == 0) {
         if (mainDeclarada) yyerror("La función 'main' ya ha sido declarada");
         else mainDeclarada = 1;
@@ -106,8 +108,9 @@ declaFunc
         if (!insTdS($2, FUNCION, $1, niv, dvar, refDom))
           yyerror("Función repetida");
       }
-      cargaContexto(niv);
+      
       descargaContexto(niv);
+      niv--;
     }
 ;
 
