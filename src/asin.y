@@ -608,7 +608,7 @@ instEntSal
 
       } else if (sim.t != T_ENTERO) {
 
-            yyerror("Error: La variable a 'read' ha de ser de tipus enter");
+            yyerror("Error: La variable a 'read' tiene que ser de tipo entero");
 
       }
 
@@ -624,7 +624,7 @@ instEntSal
 
         if ($3 != T_ENTERO) {
 
-            yyerror("Error: L'expressió a 'write' ha de ser de tipus enter");
+            yyerror("Error: L'expressión a 'write' tiene que ser de tipo entero");
 
         }
 
@@ -642,17 +642,10 @@ instEntSal
 
 instSelec
 
-
-
-  : IF_ PARA_ expre PARC_ inst ELSE_ inst
-
-
-
+  : IF_ PARA_ expre PARC_ inst ELSE_ inst{
+	if($3 != T_LOGICO){ yyerror("Error: La condición a 'if-else' tiene que ser de tipo lógico"); }
+  }
   ;
-
-
-
-
 
 
 
@@ -660,9 +653,11 @@ instIter
 
 
 
-  : FOR_ PARA_ expreOP PCOMA_ expre PCOMA_ expreOP PARC_ inst
-
-
+  : FOR_ PARA_ expreOP PCOMA_ expre PCOMA_ expreOP PARC_ inst{
+        if ($5 != T_LOGICO) {
+            yyerror("Error: La condición a 'while' tiene que ser de tipo lógico");
+        }
+    }
 
   ;
 
