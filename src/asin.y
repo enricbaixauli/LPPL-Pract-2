@@ -6,6 +6,7 @@
 #include "libtds.h"
 
 int mainDeclarada = 0;
+int tipoRetornoActual = T_ERROR;  // Valor inicial para tipo desconocido 12-12
 %}
 
 %union {
@@ -23,7 +24,7 @@ int mainDeclarada = 0;
 %token <cent> CTE_
 %token <ident> ID_
 
-%type <cent> tipoSimp const
+%type <cent> tipoSimp const decla listDecla declaVar declaFunc //12-12
 %type <cent> expre expreLogic expreIgual expreRel expreAd expreMul expreUna expreSufi expreOP
 %type <cent> opLogic opIgual opRel opAd opMul opUna
 %type <cent> paramAct listParamAct
@@ -33,12 +34,15 @@ int mainDeclarada = 0;
 programa
   : { dvar=0; niv=0; cargaContexto(niv); }
     listDecla
-    { if(verTdS) mostrarTdS(); }
+    { //if(verTdS) mostrarTdS();
+      if(!mainDeclarada){
+            yyerror("El programa no tiene una función main ");}
+    }
   ;
 
 listDecla
-  : decla
-  | listDecla decla
+  : decla { $$ = $1;} //12-12
+  | listDecla decla { $$ = $1 + $2;} //12-12
   ;
 
 decla
@@ -48,6 +52,7 @@ decla
 
 declaVar
   : tipoSimp ID_ PCOMA_ {
+
       SIMB sim = obtTdS($2);
       if (sim.t != T_ERROR) yyerror("Identificador repetido");
       else {
@@ -57,18 +62,22 @@ declaVar
       }
     }
   | tipoSimp ID_ ASIG_ const PCOMA_ {
+      //printf("DEBUG: Entrando en declaVar con tipoSimp='%d', ID_='%s' y const='%d'\n", $1, $2, $4);
       SIMB sim = obtTdS($2);
       if (sim.t != T_ERROR) yyerror("Identificador repetido");
       else {
-         if ($1 != $4) {  
+         if (! (($1 == T_ENTERO && $4 == T_ENTERO) || ($1 == T_LOGICO && $4 == T_LOGICO)) ) {
             yyerror("Error: Tipo incompatible entre la variable y la constante asignada");
+            if (!insTdS($2, VARIABLE, $1, niv, dvar, -1))
+              yyerror("Error al insertar la variable en la tabla de símbolos");
+            else dvar += TALLA_TIPO_SIMPLE;
         } else {
             if (!insTdS($2, VARIABLE, $1, niv, dvar, -1)) {
                 yyerror("Error al insertar la variable en la Tabla de Símbolos");
             } else {
                 dvar += TALLA_TIPO_SIMPLE;  
             }
-    }
+    }}}
   | tipoSimp ID_ ACORCH_ CTE_ CCORCH_ PCOMA_ {
       int numelem = $4;
       if (numelem <= 0) {
@@ -76,7 +85,13 @@ declaVar
         numelem = 0;
       }
       SIMB sim = obtTdS($2);
-      if (sim.t != T_ERROR) yyerror("Identificador repetido");
+      if (sim.t != T_ERROR) {
+        if (sim.t != T_ARRAY) yyerror("Identificador del array repetido");
+        else yyerror("Identificador repetido");
+
+      }
+
+
       else {
         int refe = insTdA($1, numelem);
         if (!insTdS($2, VARIABLE, T_ARRAY, niv, dvar, refe))
@@ -97,6 +112,39 @@ tipoSimp
   | BOOL_ { $$ = T_LOGICO; }
 ;
 
+
+
+declaFunc
+  : tipoSimp ID_ PARA_ paramForm PARC_ bloque {
+      tipoRetornoActual = $1;  // Guarda el tipo de retorno
+      niv++;
+      cargaContexto(niv);
+
+      if (strcmp($2, "main") == 0) {
+          if (mainDeclarada) {
+              yyerror("La función 'main' ya ha sido declarada");
+          } else {
+              mainDeclarada = 1;
+          }
+      }
+
+      SIMB sim = obtTdS($2);
+      if (sim.t != T_ERROR) {
+          yyerror("La función ya está declarada");
+      } else {
+          int refDom = insTdD(-1, $1);
+          if (!insTdS($2, FUNCION, $1, niv, dvar, refDom)) {
+              yyerror("Función repetida");
+          }
+      }
+
+      descargaContexto(niv);
+      niv--;
+  }
+;
+
+
+/*
 declaFunc
   : tipoSimp ID_ PARA_ paramForm PARC_ bloque {
       niv++;
@@ -116,21 +164,61 @@ declaFunc
       descargaContexto(niv);
       niv--;
     }
-;
+;*/
 
 paramForm
   : /*empty*/
   | listParamForm
 ;
 
+
+
+listParamForm
+  : tipoSimp ID_ {
+      SIMB sim = obtTdS($2);
+      if (sim.t != T_ERROR)
+        yyerror("Identificador de parámetro repetido");
+      else
+        insTdS($2, PARAMETRO, $1, niv, dvar, -1);
+    }
+  | tipoSimp ID_ COMA_ listParamForm {
+      SIMB sim = obtTdS($2);
+      if (sim.t != T_ERROR)
+        yyerror("Identificador de parámetro repetido");
+      else
+        insTdS($2, PARAMETRO, $1, niv, dvar, -1);
+    }
+;
+/*
 listParamForm
   : tipoSimp ID_ { insTdS($2, PARAMETRO, $1, niv, dvar, -1); }
   | tipoSimp ID_ COMA_ listParamForm { insTdS($2, PARAMETRO, $1, niv, dvar, -1); }
-;
+;*/
 
 bloque
-  : IBLOCK_ declaVarLocal listInst RETURN_ expre PCOMA_ FBLOCK_
+  : IBLOCK_ declaVarLocal listInst RETURN_ expre PCOMA_ FBLOCK_ {
+      if (tipoRetornoActual != T_ERROR) {
+          if (tipoRetornoActual != $5) {
+              yyerror("Error de tipos en el 'return'.");
+          } else if ($5 == T_ARRAY) {
+              yyerror("No se puede retornar un array directamente.");
+          }
+      }
+  }
 ;
+
+
+/*
+bloque
+  : IBLOCK_ declaVarLocal listInst RETURN_ expre PCOMA_ FBLOCK_{
+      INF inf = obtTdD(-1);
+      if (inf.tipo != T_ERROR) {
+            if (inf.tipo != $5) {
+                  yyerror("Incompatibilidad de tipos en el return.");
+				}
+			}
+      }
+;*/
 
 declaVarLocal
   : /*empty*/
@@ -167,16 +255,35 @@ instEntSal
 ;
 
 instSelec
-  : IF_ PARA_ expre PARC_ inst ELSE_ inst {
+  : IF_ PARA_ expre PARC_ {
       if ($3 != T_LOGICO) yyerror("Error: La condición a 'if-else' tiene que ser de tipo lógico");
-    }
+    } inst ELSE_ inst
 ;
 
+
+instIter
+  : FOR_ PARA_ expreOP PCOMA_ expre PCOMA_ expreOP  {
+      if ($3 != T_ERROR && $3 != T_ENTERO && $3 != T_LOGICO)
+        yyerror("La inicialización del 'for' debe ser de tipo simple");
+
+      if ($5 != T_ERROR && $5 != T_LOGICO)
+        yyerror("Error: La condición del 'for' debe ser de tipo lógico");
+
+      if ($7 != T_ERROR && $7 != T_ENTERO && $7 != T_LOGICO)
+        yyerror("La actualización del 'for' debe ser de tipo simple");
+    } PARC_ inst
+;
+
+/*
 instIter
   : FOR_ PARA_ expreOP PCOMA_ expre PCOMA_ expreOP PARC_ inst {
+      if ($3 != T_ENTERO && $3 != T_LOGICO) yyerror("La inicialización del 'for' debe ser de tipo simple");
       if ($5 != T_LOGICO) yyerror("Error: La condición del 'for' tiene que ser de tipo lógico");
+      if ($7 != T_ENTERO && $7 != T_LOGICO) yyerror("La actualización del 'for' debe ser de tipo simple");
+
+      //if ($5 != T_LOGICO) yyerror("Error: La condición del 'for' tiene que ser de tipo lógico");
     }
-;
+;*/
 
 expreOP
   : /*empty*/ { $$ = T_ERROR; }
@@ -194,9 +301,10 @@ expre
   | ID_ ACORCH_ expre CCORCH_ ASIG_ expre {
       SIMB sim = obtTdS($1);
       if (sim.t == T_ERROR) yyerror("Array no declarado");
-      else if (sim.t != T_ARRAY) yyerror("Asignación a un elemento que no es un array");
+      else if (sim.t != T_ARRAY) yyerror("La variable debe ser de tipo array");
       else if ($3 != T_ENTERO) yyerror("El índice debe ser entero");
       else if ($6 != T_ENTERO) yyerror("El valor asignado debe ser entero");
+      //else if (sim.ref != T_ENTERO) yyerror("La variable debe ser de tipo array");
       $$ = T_ENTERO;
     }
 ;
