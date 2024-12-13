@@ -230,23 +230,26 @@ declaFunc
 
           yyerror("La función ya está declarada");
 
+          // Si ya está declarada, marcamos el tipo de retorno como error
+          tipoRetornoActual = T_ERROR;
+
       }
-
-
 
     }bloque {
 
       // Ahora que ya tenemos el dominio de parámetros, lo insertamos
 
-      int refDom = insTdD(-1, tipoRetornoActual);
+      if (tipoRetornoActual != T_ERROR) { // Solo si no hubo errores previos
+          int refDom = insTdD(-1, tipoRetornoActual);
 
-      if (!insTdS($2, FUNCION, tipoRetornoActual, niv, dvar, refDom)){
+          if (!insTdS($2, FUNCION, tipoRetornoActual, niv, dvar, refDom)){
 
-        yyerror("Función repetida");
+              yyerror("Función repetida");
 
-        }
+          }
+      }
 
-            // Comprobar si es la función main y si ya fue declarada
+      // Comprobar si es la función main y si ya fue declarada
 
       if (strcmp($2, "main") == 0) {
 
@@ -384,20 +387,23 @@ bloque
 
   : IBLOCK_ declaVarLocal listInst RETURN_ expre PCOMA_ FBLOCK_ {
 
-      if (tipoRetornoActual != $5) {
+      // Verificar compatibilidad del tipo de retorno
 
-          yyerror("Error de tipos en el 'return'.");
+      if (tipoRetornoActual == T_ERROR) {
 
-      } else if ($5 == T_ARRAY) {
+          yyerror("Error: Declaración incompleta de la función. No se puede validar el tipo de 'return'.");
+      
+      } else if (tipoRetornoActual != $5) {
+        
+          yyerror("Error: Incompatibilidad de tipos en el 'return'.");
+          
+      }  else if ($5 == T_ARRAY) {
 
           yyerror("No se puede retornar un array directamente.");
 
       }
-
-    }
-
+  }
 ;
-
 
 
 
