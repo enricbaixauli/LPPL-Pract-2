@@ -279,47 +279,7 @@ declaFunc
 
 
 
-/*
 
-declaFunc
-
-  : tipoSimp ID_ PARA_ paramForm PARC_ bloque {
-
-      niv++;
-
-      cargaContexto(niv);
-
-      if (strcmp($2, "main") == 0) {
-
-        if (mainDeclarada) yyerror("La función 'main' ya ha sido declarada");
-
-        else mainDeclarada = 1;
-
-      }
-
-      SIMB sim = obtTdS($2);
-
-      if (sim.t != T_ERROR) yyerror("La función ya está declarada");
-
-      else {
-
-        int refDom = insTdD(-1, $1);
-
-        if (!insTdS($2, FUNCION, $1, niv, dvar, refDom))
-
-          yyerror("Función repetida");
-
-      }
-
-      
-
-      descargaContexto(niv);
-
-      niv--;
-
-    }
-
-;*/
 
 
 
@@ -758,13 +718,16 @@ expreSufi
 
       if (sim.t == T_ERROR) yyerror("Función no declarada");
 
-      else if (sim.t != FUNCION) {
-
-      yyerror("No es una función");}
-
-      $$ = T_ENTERO;
-
+      else if (sim.t != T_ENTERO && sim.t !=T_LOGICO  ) {yyerror("No es una función");}
+      else {
+        if (!cmpDom(sim.ref, $3)) {
+            yyerror("Error: Arguments incorrectes a la crida de funció");
+          }
+      }
+     $$ = sim.t;
+       
     }
+
 
 ;
 
@@ -772,7 +735,7 @@ expreSufi
 
 paramAct
 
-  : /*empty*/ { $$ = T_ERROR; }
+  : /*empty*/ { $$ = insTdD(-1,T_VACIO);}
 
   | listParamAct
 
@@ -782,9 +745,9 @@ paramAct
 
 listParamAct
 
-  : expre { $$ = $1; }
+  : expre { $$ = insTdD(-1,$1);}   
 
-  | expre COMA_ listParamAct { $$ = $1; }
+  | expre COMA_ listParamAct { $$ = insTdD($3,$1);}
 
 ;
 
