@@ -527,8 +527,8 @@ char *yytext;
 #line 5 "src/alex.l"
 #include <stdio.h>
 #include <string.h>
-#include "asin.h"
 #include "header.h"
+#include "asin.h"
 
 #define  retornar(x) {if (verbosidad) ECHO ; return (x) ; }
 #line 535 "alex.c"

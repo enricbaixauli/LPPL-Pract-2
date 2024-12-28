@@ -4,8 +4,8 @@
 %{
 #include <stdio.h>
 #include <string.h>
-#include "asin.h"
 #include "header.h"
+#include "asin.h"
 
 #define  retornar(x) {if (verbosidad) ECHO ; return (x) ; }
 %}

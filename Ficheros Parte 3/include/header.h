@@ -35,11 +35,17 @@
 #define OP_RESTO 19
 
 
-
+typedef struct aux{
+   int valor;
+   int ref1;
+   int ref2; 
+   int ref3;
+   int ref4;
+} Aux;
 
 typedef struct texp{
    int t;           
-   //int v;       
+   int pos;       
 } Expresion;
 
 /************* Variables externas definidas en el AL */
